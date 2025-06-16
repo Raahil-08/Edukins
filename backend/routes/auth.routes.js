@@ -1,13 +1,8 @@
-const router = require('express').Router();
+const express = require('express');
+const router = express.Router();
+const { register, login } = require('../controllers/auth.controller');
 
-router.post('/register', (req, res) => {
-  res.json({ msg: 'Register route works ✅' });
-});
-
-router.post('/login', (req, res) => {
-  res.json({ token: 'demo.jwt.token' });
-});
+router.post('/register', register);
+router.post('/login', login);
 
 module.exports = router;
-
-
