@@ -1,8 +1,11 @@
-const express = require('express');
+import express from 'express';
+import { verifyToken } from '../middleware/auth.middleware.js';
+import { postLesson, getAllLessons, getSingleLesson } from '../controllers/lesson.controller.js';
+
 const router = express.Router();
 
-router.get('/', (req, res) => {
-  res.send("User route placeholder ✅");
-});
+router.post('/', verifyToken, postLesson);
+router.get('/', verifyToken, getAllLessons);
+router.get('/:id', verifyToken, getSingleLesson);
 
-module.exports = router;
+export default router;

@@ -1,9 +1,14 @@
-const express = require('express');
-const router = express.Router();
-const { verifyToken } = require('../middleware/auth.middleware');
+import express from 'express';
+import { verifyToken } from '../middleware/auth.middleware.js';
 
+const router = express.Router();
+
+// Example authenticated route
 router.get('/me', verifyToken, (req, res) => {
-  res.json({ message: "🔒 Access granted!", user: req.user });
+  res.json({
+    message: '🔐 User profile route working',
+    user: req.user
+  });
 });
 
-module.exports = router;
+export default router;

@@ -1,16 +1,27 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
 
+import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
+import lessonRoutes from './routes/lesson.routes.js';
+import quizRoutes from './routes/quiz.routes.js';
+import avatarRoutes from './routes/avatar.routes.js';
+
+dotenv.config();
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// Valid route files
-app.use('/api/auth', require('./routes/auth.routes'));
-app.use('/api/user', require('./routes/user.routes'));
-app.use('/api/lesson', require('./routes/lesson.routes'));
-app.use('/api/quiz', require('./routes/quiz.routes'));
-app.use('/api/avatar', require('./routes/avatar.routes'));
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/lesson', lessonRoutes);
+app.use('/api/quiz', quizRoutes);
+app.use('/api/avatar', avatarRoutes);
 
-module.exports = app;
+app.get('/', (req, res) => {
+  res.send('🌟 EDUKINS backend is running!');
+});
+
+export default app;

@@ -1,6 +1,6 @@
-const { pgPool } = require('../database/connect');
+import { pgPool } from '../database/connect.js';
 
-const createUser = async ({ name, email, password, role }) => {
+export const createUser = async ({ name, email, password, role }) => {
   const res = await pgPool.query(
     `INSERT INTO users (name, email, password, role)
      VALUES ($1, $2, $3, $4)
@@ -10,9 +10,10 @@ const createUser = async ({ name, email, password, role }) => {
   return res.rows[0];
 };
 
-const getUserByEmail = async (email) => {
-  const res = await pgPool.query(`SELECT * FROM users WHERE email = $1`, [email]);
+export const getUserByEmail = async (email) => {
+  const res = await pgPool.query(
+    `SELECT * FROM users WHERE email = $1`,
+    [email]
+  );
   return res.rows[0];
 };
-
-module.exports = { createUser, getUserByEmail };

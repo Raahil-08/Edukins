@@ -1,8 +1,10 @@
-const express = require('express');
+import express from 'express';
+
 const router = express.Router();
 
+// Example route (you can customize later)
 router.get('/', (req, res) => {
-  res.send("User route placeholder ✅");
+  res.send("Avatar route works! ✅");
 });
 
-module.exports = router;
+export default router;

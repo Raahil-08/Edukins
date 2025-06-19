@@ -1,8 +1,10 @@
-const express = require('express');
+import express from 'express';
+
 const router = express.Router();
 
+// Example placeholder
 router.get('/', (req, res) => {
-  res.send("User route placeholder ✅");
+  res.send("Quiz route working! ✅");
 });
 
-module.exports = router;
+export default router;

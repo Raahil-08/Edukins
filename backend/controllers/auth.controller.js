@@ -1,14 +1,15 @@
-const bcrypt = require('bcrypt');
-const { createUser, getUserByEmail } = require('../models/user.model');
-const { generateToken } = require('../utils/token');
+import bcrypt from 'bcrypt';
+import { createUser, getUserByEmail } from '../models/user.model.js';
+import { generateToken } from '../utils/token.js';
 
 const register = async (req, res) => {
   const { name, email, password } = req.body;
-  if (!name || !email || !password)
-    return res.status(400).json({ error: 'All fields are required' });
+
+  if (!email || !password || !name)
+    return res.status(400).json({ error: 'All fields required' });
 
   const existing = await getUserByEmail(email);
-  if (existing) return res.status(409).json({ error: 'Email already registered' });
+  if (existing) return res.status(409).json({ error: 'Email already exists' });
 
   const hash = await bcrypt.hash(password, 10);
   const user = await createUser({ name, email, password: hash });
@@ -19,6 +20,7 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   const { email, password } = req.body;
+
   const user = await getUserByEmail(email);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -27,7 +29,8 @@ const login = async (req, res) => {
 
   const token = generateToken(user);
   delete user.password;
+
   res.json({ user, token });
 };
 
-module.exports = { register, login };
+export { register, login };
