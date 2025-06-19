@@ -1,7 +1,7 @@
 const app = require('./app');
 const { connectPostgres } = require('./database/connect');
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5050;
 
 (async () => {
   try {
