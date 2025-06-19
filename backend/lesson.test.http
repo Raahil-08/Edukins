@@ -1,7 +1,7 @@
-### 🧠 POST: Generate AI Lesson (OpenAI)
+### 🧠 Create AI Lesson (OpenAI)
 POST http://localhost:5050/api/lesson
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJyYWFoaWxAZWR1a2lucy5haSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzUwMDUxOTc2LCJleHAiOjE3NTA2NTY3NzZ9.c6pZ3w4V0A8X5-UGByX0Xw2om7Ns0v93NY9ft-DAj00
+Authorization: Bearer {{token}}
 
 {
   "subject": "Science",
@@ -10,10 +10,15 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiO
   "avatar": "Cyberstein"
 }
 
-### 📄 GET: All Lessons for User
-GET http://localhost:5050/api/lesson
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJyYWFoaWxAZWR1a2lucy5haSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzUwMDUxOTc2LCJleHAiOjE3NTA2NTY3NzZ9.c6pZ3w4V0A8X5-UGByX0Xw2om7Ns0v93NY9ft-DAj00
+###
 
-### 📚 GET: One Specific Lesson
+### 📚 Get All Lessons for the Authenticated User
+GET http://localhost:5050/api/lesson
+Authorization: Bearer {{token}}
+
+###
+
+### 📄 Get Specific Lesson by ID
 GET http://localhost:5050/api/lesson/1
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJyYWFoaWxAZWR1a2lucy5haSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzUwMDUxOTc2LCJleHAiOjE3NTA2NTY3NzZ9.c6pZ3w4V0A8X5-UGByX0Xw2om7Ns0v93NY9ft-DAj00
+Authorization: Bearer {{token}}
+
