@@ -12,8 +12,8 @@ export const getLessonAudio = async (req, res) => {
   try {
     const audioBuffer = await generateVoice(lesson.avatar, lesson.script);
     res.set({
-      'Content-Type': 'audio/mpeg',
-      'Content-Disposition': `inline; filename="${lesson.topic}.mp3"`
+      'Content-Type': 'audio/aiff',
+      'Content-Disposition': `inline; filename="${lesson.topic}.aiff"`
     });
     res.send(audioBuffer);
   } catch (err) {
