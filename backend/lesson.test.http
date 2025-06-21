@@ -19,6 +19,9 @@ Authorization: Bearer {{token}}
 ###
 
 ### 📄 Get Specific Lesson by ID
-GET http://localhost:5050/api/lesson/1
+GET http://localhost:5050/api/lesson/4
 Authorization: Bearer {{token}}
 
+### 🔊 Get AI Voiceover for Lesson
+GET http://localhost:5050/api/lesson/4/audio
+Authorization: Bearer {{token}}
