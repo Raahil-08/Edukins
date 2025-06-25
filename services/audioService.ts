@@ -38,7 +38,7 @@ class AudioService {
       const fileName = `lesson_${lessonId}_audio.wav`;
       
       if (Platform.OS === 'web') {
-        // For web, create a mock audio URL
+        // For web, simulate audio playback
         onProgress('Creating demo audio...');
         await this.playWebAudio(onProgress, onError);
         return;
@@ -173,4 +173,5 @@ class AudioService {
   }
 }
 
-export const audioService = new AudioService();
+// Export a single instance
+export default new AudioService();

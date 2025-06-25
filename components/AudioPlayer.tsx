@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Play, Pause, Square, Volume2 } from 'lucide-react-native';
-import { audioService } from '@/services/audioService';
+import audioService from '@/services/audioService';
 
 interface AudioPlayerProps {
   lessonId: string;
