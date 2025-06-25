@@ -1,39 +1,33 @@
-import fs from 'fs';
 import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
-/**
- * Generate voice audio using macOS `say` command.
- * Customizes the voice based on avatar (optional).
- */
 export async function generateVoice(avatar, text) {
+  const speaker = mapAvatarToSpeakerId(avatar);
+  const outPath = `/tmp/${uuidv4()}.wav`;
+
   try {
-    return await macosTTS(avatar, text);
+    // Use the Python Coqui script
+    const cmd = `python3 backend/coqui_tts.py ${speaker} "${text.replace(/"/g, '\\"')}" ${outPath}`;
+    execSync(cmd, { stdio: 'inherit' });
+
+    // Read audio into a buffer and return
+    const audioBuffer = fs.readFileSync(outPath);
+    fs.unlinkSync(outPath);
+    return audioBuffer;
   } catch (err) {
-    console.error('❌ macOS TTS failed:', err.message);
+    console.error('❌ Coqui TTS error:', err.message);
     throw new Error('TTS generation failed.');
   }
 }
 
-async function macosTTS(avatar, text) {
-  const timestamp = Date.now();
-  const filePath = `/tmp/tts-${timestamp}.aiff`;
-
-  // Map avatar to macOS voice
-  const avatarVoices = {
-    Cyberstein: 'Fred',
-    Roboldo: 'Daniel',
-    Debugjit: 'Samantha',
-    Jennerator: 'Alex',
+function mapAvatarToSpeakerId(avatar) {
+  const map = {
+    Cyberstein: 'p231',
+    Debugjit: 'p294',
+    Jennerator: 'p326',
+    Roboldo: 'p345'
   };
-
-  const voice = avatarVoices[avatar] || 'Samantha';
-
-  // Generate AIFF audio using macOS TTS (no data-format flag)
-  const cmd = `say -v "${voice}" -o "${filePath}" "${text.replace(/"/g, '\\"')}"`;
-  execSync(cmd);
-
-  // Read the audio file into a buffer
-  const buffer = fs.readFileSync(filePath);
-  fs.unlinkSync(filePath); // Clean up temp file
-  return buffer;
+  return map[avatar] || 'p231';
 }

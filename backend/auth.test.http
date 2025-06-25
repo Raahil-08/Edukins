@@ -19,4 +19,4 @@ Content-Type: application/json
 
 ### 🔐 Get Authenticated Profile
 GET http://localhost:5050/api/user/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJyYWFoaWxAZWR1a2lucy5haSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzUwMDUxOTc2LCJleHAiOjE3NTA2NTY3NzZ9.c6pZ3w4V0A8X5-UGByX0Xw2om7Ns0v93NY9ft-DAj00
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJyYWFoaWxAZWR1a2lucy5haSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzUwNzY1NjYzLCJleHAiOjE3NTEzNzA0NjN9.Rk6wBcGUYZUxnElnkD9xt4--8K1bv_MMIdWCU3U2QO0
