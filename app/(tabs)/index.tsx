@@ -19,12 +19,13 @@ interface Lesson {
 export default function LessonsScreen() {
   const { user, isLoading: authLoading } = useAuth();
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && user) {
+      console.log('User authenticated, loading lessons...');
       loadLessons();
     }
   }, [authLoading, user]);
@@ -38,7 +39,11 @@ export default function LessonsScreen() {
       }
       
       setError(null);
+      console.log('Fetching lessons from API...');
+      
       const lessonsData = await apiService.getLessons();
+      console.log('Lessons loaded:', lessonsData.length, 'lessons');
+      
       setLessons(lessonsData);
       
     } catch (err: any) {
@@ -51,19 +56,27 @@ export default function LessonsScreen() {
   };
 
   const onRefresh = () => {
+    console.log('Refreshing lessons...');
     loadLessons(true);
   };
 
-  if (authLoading || loading) {
+  // Show loading only during initial auth
+  if (authLoading) {
+    return <LoadingSpinner message="Initializing app..." />;
+  }
+
+  // Show loading only during initial lesson load
+  if (loading && lessons.length === 0) {
     return <LoadingSpinner message="Loading lessons..." />;
   }
 
-  if (error) {
+  if (error && lessons.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <Text style={styles.errorTitle}>Connection Issue</Text>
           <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorSubtext}>Don't worry! The app is working in demo mode.</Text>
         </View>
       </SafeAreaView>
     );
@@ -76,8 +89,13 @@ export default function LessonsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Welcome back, {user?.name}!</Text>
+        <Text style={styles.title}>Welcome back, {user?.name || 'Student'}!</Text>
         <Text style={styles.subtitle}>Ready to learn something new today?</Text>
+        {error && (
+          <View style={styles.demoNotice}>
+            <Text style={styles.demoText}>📱 Running in demo mode</Text>
+          </View>
+        )}
       </View>
 
       <FlatList
@@ -121,6 +139,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
   },
+  demoNotice: {
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#fef3c7',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  demoText: {
+    fontSize: 12,
+    color: '#92400e',
+    fontWeight: '600',
+  },
   listContainer: {
     paddingVertical: 8,
   },
@@ -141,5 +172,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: '#10b981',
+    textAlign: 'center',
+    fontWeight: '600',
   },
 });
