@@ -40,6 +40,9 @@ export default function AudioPlayer({ lessonId, avatar }: AudioPlayerProps) {
             setIsLoading(false);
             setIsPlaying(true);
           }
+          if (progress === 'Audio finished') {
+            setIsPlaying(false);
+          }
         },
         (errorMessage) => {
           setError(errorMessage);
@@ -70,9 +73,16 @@ export default function AudioPlayer({ lessonId, avatar }: AudioPlayerProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.avatarSection}>
-        <Volume2 size={24} color="#6366f1" />
-        <Text style={styles.avatarText}>Voice: {avatar}</Text>
+      <View style={styles.header}>
+        <View style={styles.avatarSection}>
+          <View style={styles.iconContainer}>
+            <Volume2 size={24} color="#6366f1" />
+          </View>
+          <View>
+            <Text style={styles.avatarTitle}>Voice Narrator</Text>
+            <Text style={styles.avatarText}>{avatar}</Text>
+          </View>
+        </View>
       </View>
 
       <TouchableOpacity
@@ -92,7 +102,9 @@ export default function AudioPlayer({ lessonId, avatar }: AudioPlayerProps) {
       </TouchableOpacity>
 
       {error && (
-        <Text style={styles.errorText}>{error}</Text>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
       )}
     </View>
   );
@@ -101,33 +113,49 @@ export default function AudioPlayer({ lessonId, avatar }: AudioPlayerProps) {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 24,
     marginHorizontal: 16,
     marginVertical: 8,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  header: {
+    marginBottom: 20,
   },
   avatarSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#e0e7ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  avatarTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginBottom: 2,
   },
   avatarText: {
-    marginLeft: 8,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '700',
+    color: '#1f2937',
   },
   playButton: {
     backgroundColor: '#6366f1',
-    borderRadius: 12,
+    borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -145,13 +173,21 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginLeft: 8,
   },
+  errorContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#fef2f2',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
   errorText: {
-    color: '#ef4444',
+    color: '#dc2626',
     fontSize: 14,
     textAlign: 'center',
-    marginTop: 12,
+    fontWeight: '500',
   },
 });

@@ -1,5 +1,6 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
 import { apiService } from './api';
 
 class AudioService {
@@ -12,13 +13,15 @@ class AudioService {
 
   async setupAudio() {
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        staysActiveInBackground: false,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
+      if (Platform.OS !== 'web') {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: false,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+      }
     } catch (error) {
       console.error('Failed to setup audio:', error);
     }
@@ -33,8 +36,15 @@ class AudioService {
       await this.stopAudio();
 
       const fileName = `lesson_${lessonId}_audio.wav`;
-      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      
+      if (Platform.OS === 'web') {
+        // For web, create a mock audio URL
+        onProgress('Creating demo audio...');
+        await this.playWebAudio(onProgress, onError);
+        return;
+      }
 
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
       const fileInfo = await FileSystem.getInfoAsync(fileUri);
       
       if (!fileInfo.exists) {
@@ -44,7 +54,7 @@ class AudioService {
           // Try to download from API
           const audioBlob = await apiService.getLessonAudio(lessonId);
           
-          // For web platform, handle blob differently
+          // Handle blob for React Native
           if (typeof audioBlob === 'object' && audioBlob.constructor.name === 'Blob') {
             const reader = new FileReader();
             const base64Data = await new Promise<string>((resolve, reject) => {
@@ -92,9 +102,28 @@ class AudioService {
     }
   }
 
+  private async playWebAudio(onProgress: (progress: string) => void, onError: (error: string) => void) {
+    try {
+      // For web demo, simulate audio playback
+      onProgress('Loading audio...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      onProgress('Playing audio...');
+      this.isPlaying = true;
+      
+      // Simulate 5 second audio playback
+      setTimeout(() => {
+        this.isPlaying = false;
+        onProgress('Audio finished');
+      }, 5000);
+      
+    } catch (error: any) {
+      onError('Web audio simulation failed');
+    }
+  }
+
   private async createMockAudio(fileUri: string) {
     // Create a minimal WAV file header for demo purposes
-    // This is a very basic implementation for demonstration
     const mockAudioData = 'UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
     await FileSystem.writeAsStringAsync(fileUri, mockAudioData, {
       encoding: FileSystem.EncodingType.Base64,
@@ -111,6 +140,9 @@ class AudioService {
       } catch (error) {
         console.error('Error stopping audio:', error);
       }
+    } else if (Platform.OS === 'web') {
+      // For web simulation
+      this.isPlaying = false;
     }
   }
 

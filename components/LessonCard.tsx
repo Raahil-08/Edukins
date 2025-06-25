@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { router } from 'expo-router';
-import { BookOpen, Clock, Star } from 'lucide-react-native';
+import { BookOpen, Clock, Star, User } from 'lucide-react-native';
 
 interface Lesson {
   id: string;
@@ -38,33 +38,59 @@ export default function LessonCard({ lesson }: LessonCardProps) {
     return colors[difficulty] || '#6b7280';
   };
 
+  const getSubjectImage = (subject: string) => {
+    const images: Record<string, string> = {
+      'Science': 'https://images.pexels.com/photos/2280549/pexels-photo-2280549.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'Math': 'https://images.pexels.com/photos/6256/mathematics-computation-math-school.jpg?auto=compress&cs=tinysrgb&w=400',
+      'English': 'https://images.pexels.com/photos/159581/dictionary-reference-book-learning-meaning-159581.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'History': 'https://images.pexels.com/photos/1329296/pexels-photo-1329296.jpeg?auto=compress&cs=tinysrgb&w=400',
+      'Geography': 'https://images.pexels.com/photos/335393/pexels-photo-335393.jpeg?auto=compress&cs=tinysrgb&w=400',
+    };
+    return images[subject] || images['Science'];
+  };
+
   const handlePress = () => {
     router.push(`/lesson/${lesson.id}`);
   };
 
   return (
     <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.7}>
-      <View style={styles.header}>
-        <View style={[styles.subjectBadge, { backgroundColor: getSubjectColor(lesson.subject) }]}>
-          <BookOpen size={16} color="#ffffff" />
-          <Text style={styles.subjectText}>{lesson.subject}</Text>
-        </View>
-        <View style={styles.gradeContainer}>
-          <Text style={styles.gradeText}>Grade {lesson.grade}</Text>
+      <View style={styles.imageContainer}>
+        <Image 
+          source={{ uri: getSubjectImage(lesson.subject) }} 
+          style={styles.subjectImage}
+          resizeMode="cover"
+        />
+        <View style={styles.imageOverlay}>
+          <View style={[styles.subjectBadge, { backgroundColor: getSubjectColor(lesson.subject) }]}>
+            <BookOpen size={16} color="#ffffff" />
+            <Text style={styles.subjectText}>{lesson.subject}</Text>
+          </View>
         </View>
       </View>
 
-      <Text style={styles.topic}>{lesson.topic}</Text>
-      <Text style={styles.avatar}>👨‍🏫 {lesson.avatar}</Text>
-
-      <View style={styles.footer}>
-        <View style={styles.metaItem}>
-          <Clock size={14} color="#6b7280" />
-          <Text style={styles.metaText}>{lesson.duration}</Text>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.topic} numberOfLines={2}>{lesson.topic}</Text>
+          <View style={styles.gradeContainer}>
+            <Text style={styles.gradeText}>Grade {lesson.grade}</Text>
+          </View>
         </View>
-        <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(lesson.difficulty) }]}>
-          <Star size={12} color="#ffffff" />
-          <Text style={styles.difficultyText}>{lesson.difficulty}</Text>
+
+        <View style={styles.avatarContainer}>
+          <User size={16} color="#6b7280" />
+          <Text style={styles.avatar}>{lesson.avatar}</Text>
+        </View>
+
+        <View style={styles.footer}>
+          <View style={styles.metaItem}>
+            <Clock size={14} color="#6b7280" />
+            <Text style={styles.metaText}>{lesson.duration}</Text>
+          </View>
+          <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(lesson.difficulty) }]}>
+            <Star size={12} color="#ffffff" />
+            <Text style={styles.difficultyText}>{lesson.difficulty}</Text>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -74,24 +100,36 @@ export default function LessonCard({ lesson }: LessonCardProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
     marginHorizontal: 16,
     marginVertical: 8,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    overflow: 'hidden',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  imageContainer: {
+    position: 'relative',
+    height: 140,
+  },
+  subjectImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'flex-end',
+    padding: 16,
   },
   subjectBadge: {
     flexDirection: 'row',
@@ -99,12 +137,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+    alignSelf: 'flex-start',
   },
   subjectText: {
     color: '#ffffff',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     marginLeft: 4,
+  },
+  content: {
+    padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  topic: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+    flex: 1,
+    marginRight: 12,
+    lineHeight: 24,
   },
   gradeContainer: {
     backgroundColor: '#f3f4f6',
@@ -117,17 +173,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
   },
-  topic: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 8,
-    lineHeight: 24,
+  avatarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   avatar: {
     fontSize: 14,
     color: '#6b7280',
-    marginBottom: 16,
+    marginLeft: 6,
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
@@ -142,6 +197,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
     marginLeft: 4,
+    fontWeight: '500',
   },
   difficultyBadge: {
     flexDirection: 'row',

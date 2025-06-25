@@ -3,6 +3,8 @@ import axios from 'axios';
 const BASE_URL = 'http://localhost:5050/api';
 
 class ApiService {
+  private client;
+
   constructor() {
     this.client = axios.create({
       baseURL: BASE_URL,
