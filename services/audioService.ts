@@ -6,6 +6,7 @@ import { apiService } from './api';
 class AudioService {
   private sound: Audio.Sound | null = null;
   private isPlaying: boolean = false;
+  private webAudio: HTMLAudioElement | null = null;
 
   constructor() {
     this.setupAudio();
@@ -35,15 +36,97 @@ class AudioService {
     try {
       await this.stopAudio();
 
-      const fileName = `lesson_${lessonId}_audio.wav`;
-      
       if (Platform.OS === 'web') {
-        // For web, simulate audio playback
-        onProgress('Creating demo audio...');
-        await this.playWebAudio(onProgress, onError);
+        // For web, use text-to-speech or simulate audio playback
+        await this.playWebAudio(lessonId, onProgress, onError);
         return;
       }
 
+      // For mobile platforms
+      await this.playMobileAudio(lessonId, onProgress, onError);
+      
+    } catch (error: any) {
+      console.error('Audio playback error:', error);
+      onError(error.message || 'Failed to play audio');
+    }
+  }
+
+  private async playWebAudio(
+    lessonId: string,
+    onProgress: (progress: string) => void,
+    onError: (error: string) => void
+  ) {
+    try {
+      onProgress('Preparing audio...');
+      
+      // Get lesson content for text-to-speech
+      const lesson = await apiService.getLesson(lessonId);
+      
+      if ('speechSynthesis' in window) {
+        onProgress('Loading text-to-speech...');
+        
+        // Use Web Speech API for text-to-speech
+        const utterance = new SpeechSynthesisUtterance(lesson.script);
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        utterance.volume = 0.8;
+        
+        // Find a good voice
+        const voices = speechSynthesis.getVoices();
+        const preferredVoice = voices.find(voice => 
+          voice.lang.startsWith('en') && voice.name.includes('Google')
+        ) || voices.find(voice => voice.lang.startsWith('en')) || voices[0];
+        
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+
+        utterance.onstart = () => {
+          this.isPlaying = true;
+          onProgress('Playing audio...');
+        };
+
+        utterance.onend = () => {
+          this.isPlaying = false;
+          onProgress('Audio finished');
+        };
+
+        utterance.onerror = (event) => {
+          this.isPlaying = false;
+          onError(`Speech synthesis error: ${event.error}`);
+        };
+
+        speechSynthesis.speak(utterance);
+        
+      } else {
+        // Fallback: simulate audio playback
+        onProgress('Loading audio...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        onProgress('Playing audio...');
+        this.isPlaying = true;
+        
+        // Simulate audio duration based on text length
+        const duration = Math.max(5000, lesson.script.length * 50); // ~50ms per character
+        
+        setTimeout(() => {
+          this.isPlaying = false;
+          onProgress('Audio finished');
+        }, duration);
+      }
+      
+    } catch (error: any) {
+      onError('Web audio playback failed: ' + error.message);
+    }
+  }
+
+  private async playMobileAudio(
+    lessonId: string,
+    onProgress: (progress: string) => void,
+    onError: (error: string) => void
+  ) {
+    try {
+      const fileName = `lesson_${lessonId}_audio.wav`;
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
       const fileInfo = await FileSystem.getInfoAsync(fileUri);
       
@@ -97,28 +180,7 @@ class AudioService {
       onProgress('Playing audio...');
       
     } catch (error: any) {
-      console.error('Audio playback error:', error);
-      onError(error.message || 'Failed to play audio');
-    }
-  }
-
-  private async playWebAudio(onProgress: (progress: string) => void, onError: (error: string) => void) {
-    try {
-      // For web demo, simulate audio playback
-      onProgress('Loading audio...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      onProgress('Playing audio...');
-      this.isPlaying = true;
-      
-      // Simulate 5 second audio playback
-      setTimeout(() => {
-        this.isPlaying = false;
-        onProgress('Audio finished');
-      }, 5000);
-      
-    } catch (error: any) {
-      onError('Web audio simulation failed');
+      throw new Error('Mobile audio playback failed: ' + error.message);
     }
   }
 
@@ -131,39 +193,63 @@ class AudioService {
   }
 
   async stopAudio() {
-    if (this.sound) {
-      try {
-        await this.sound.stopAsync();
-        await this.sound.unloadAsync();
-        this.sound = null;
-        this.isPlaying = false;
-      } catch (error) {
-        console.error('Error stopping audio:', error);
+    if (Platform.OS === 'web') {
+      // Stop web speech synthesis
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
       }
-    } else if (Platform.OS === 'web') {
-      // For web simulation
+      if (this.webAudio) {
+        this.webAudio.pause();
+        this.webAudio = null;
+      }
       this.isPlaying = false;
+    } else {
+      // Stop mobile audio
+      if (this.sound) {
+        try {
+          await this.sound.stopAsync();
+          await this.sound.unloadAsync();
+          this.sound = null;
+          this.isPlaying = false;
+        } catch (error) {
+          console.error('Error stopping audio:', error);
+        }
+      }
     }
   }
 
   async pauseAudio() {
-    if (this.sound && this.isPlaying) {
-      try {
-        await this.sound.pauseAsync();
+    if (Platform.OS === 'web') {
+      if ('speechSynthesis' in window) {
+        speechSynthesis.pause();
         this.isPlaying = false;
-      } catch (error) {
-        console.error('Error pausing audio:', error);
+      }
+    } else {
+      if (this.sound && this.isPlaying) {
+        try {
+          await this.sound.pauseAsync();
+          this.isPlaying = false;
+        } catch (error) {
+          console.error('Error pausing audio:', error);
+        }
       }
     }
   }
 
   async resumeAudio() {
-    if (this.sound && !this.isPlaying) {
-      try {
-        await this.sound.playAsync();
+    if (Platform.OS === 'web') {
+      if ('speechSynthesis' in window) {
+        speechSynthesis.resume();
         this.isPlaying = true;
-      } catch (error) {
-        console.error('Error resuming audio:', error);
+      }
+    } else {
+      if (this.sound && !this.isPlaying) {
+        try {
+          await this.sound.playAsync();
+          this.isPlaying = true;
+        } catch (error) {
+          console.error('Error resuming audio:', error);
+        }
       }
     }
   }
