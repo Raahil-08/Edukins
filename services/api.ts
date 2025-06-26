@@ -136,6 +136,12 @@ class ApiService {
         console.warn('Backend TTS not available, using browser text-to-speech');
         throw new Error('TTS_FALLBACK_TO_BROWSER');
       }
+      
+      if (error.response?.status === 503) {
+        // TTS service unavailable, fallback to browser
+        throw new Error('TTS_FALLBACK_TO_BROWSER');
+      }
+      
       throw new Error(`Failed to generate audio: ${error.message}`);
     }
   }
