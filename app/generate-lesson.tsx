@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ArrowLeft, Sparkles, BookOpen, Clock, User, RefreshCw, Brain, Zap, Cpu, Database } from 'lucide-react-native';
+import { ArrowLeft, Sparkles, BookOpen, Clock, User, RefreshCw, Brain, Zap, Cpu, Database, CheckCircle } from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -17,6 +17,7 @@ interface GeneratedLesson {
   generatedAt: string;
   wordCount?: number;
   avatar?: string;
+  isAIGenerated?: boolean;
 }
 
 export default function GenerateLessonScreen() {
@@ -27,11 +28,11 @@ export default function GenerateLessonScreen() {
   const [generationStep, setGenerationStep] = useState(0);
 
   const generationSteps = [
-    { icon: Brain, text: 'Analyzing your topic...', color: '#10b981' },
-    { icon: Database, text: 'Accessing AI knowledge base...', color: '#f59e0b' },
-    { icon: Cpu, text: 'Generating personalized content...', color: '#6366f1' },
-    { icon: BookOpen, text: 'Structuring the lesson...', color: '#8b5cf6' },
-    { icon: Sparkles, text: 'Adding finishing touches...', color: '#ec4899' },
+    { icon: Brain, text: 'Connecting to AI backend...', color: '#10b981' },
+    { icon: Database, text: 'Analyzing topic and grade level...', color: '#f59e0b' },
+    { icon: Cpu, text: 'AI is generating personalized content...', color: '#6366f1' },
+    { icon: BookOpen, text: 'Structuring educational material...', color: '#8b5cf6' },
+    { icon: Sparkles, text: 'Finalizing your custom lesson...', color: '#ec4899' },
   ];
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export default function GenerateLessonScreen() {
           }
           return prev;
         });
-      }, 2000);
+      }, 3000); // Slower progression for AI generation
 
       return () => clearInterval(interval);
     }
@@ -61,15 +62,18 @@ export default function GenerateLessonScreen() {
       setError(null);
       setGenerationStep(0);
       
-      // Call API to generate lesson with AI
-      console.log('Generating lesson for:', { topic, grade });
-      const generatedLesson = await apiService.generateLesson(topic!, parseInt(grade!));
-      console.log('Generated lesson:', generatedLesson);
+      console.log('🤖 Starting AI lesson generation...');
+      console.log('📝 Topic:', topic);
+      console.log('🎓 Grade:', grade);
       
+      // Call your actual AI backend to generate the lesson
+      const generatedLesson = await apiService.generateLesson(topic!, parseInt(grade!));
+      
+      console.log('✅ AI lesson generated successfully:', generatedLesson);
       setLesson(generatedLesson);
       
     } catch (err: any) {
-      console.error('Failed to generate lesson:', err);
+      console.error('❌ AI lesson generation failed:', err);
       setError(err.message);
     } finally {
       setIsGenerating(false);
@@ -109,9 +113,9 @@ export default function GenerateLessonScreen() {
           <View style={styles.brainIcon}>
             <Brain size={40} color="#6366f1" />
           </View>
-          <Text style={styles.generatingTitle}>Creating Your AI Lesson</Text>
+          <Text style={styles.generatingTitle}>AI Creating Your Lesson</Text>
           <Text style={styles.generatingSubtitle}>
-            Our AI is crafting a personalized lesson about "{topic}" for Grade {grade}
+            Our advanced AI is crafting a personalized lesson about "{topic}" for Grade {grade}
           </Text>
           <View style={styles.processingSteps}>
             {generationSteps.map((step, index) => {
@@ -132,14 +136,19 @@ export default function GenerateLessonScreen() {
                     styles.stepIconContainer,
                     { backgroundColor: isActive ? `${step.color}20` : '#f3f4f6' }
                   ]}>
-                    <StepIcon 
-                      size={16} 
-                      color={isActive ? step.color : '#9ca3af'} 
-                    />
+                    {isCompleted ? (
+                      <CheckCircle size={16} color="#10b981" />
+                    ) : (
+                      <StepIcon 
+                        size={16} 
+                        color={isActive ? step.color : '#9ca3af'} 
+                      />
+                    )}
                   </View>
                   <Text style={[
                     styles.stepText,
-                    isActive && { color: step.color, fontWeight: '600' }
+                    isActive && { color: step.color, fontWeight: '600' },
+                    isCompleted && { color: '#10b981', fontWeight: '600' }
                   ]}>
                     {step.text}
                   </Text>
@@ -163,6 +172,9 @@ export default function GenerateLessonScreen() {
             <Text style={styles.aiInfoText}>
               ⚡ Personalizing for your learning style
             </Text>
+            <Text style={styles.aiInfoText}>
+              🎯 Creating unique educational content
+            </Text>
           </View>
         </View>
       </SafeAreaView>
@@ -176,17 +188,33 @@ export default function GenerateLessonScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <ArrowLeft size={24} color="#1f2937" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Generation Failed</Text>
+          <Text style={styles.headerTitle}>AI Generation Failed</Text>
         </View>
         <View style={styles.errorContainer}>
           <View style={styles.errorIcon}>
             <Brain size={32} color="#ef4444" />
           </View>
-          <Text style={styles.errorTitle}>Oops! AI Generation Failed</Text>
+          <Text style={styles.errorTitle}>AI Generation Failed</Text>
           <Text style={styles.errorText}>{error}</Text>
+          
+          {error.includes('backend is not running') && (
+            <View style={styles.troubleshootingContainer}>
+              <Text style={styles.troubleshootingTitle}>Troubleshooting:</Text>
+              <Text style={styles.troubleshootingText}>
+                1. Make sure your backend server is running on port 5050
+              </Text>
+              <Text style={styles.troubleshootingText}>
+                2. Check that your AI service is properly configured
+              </Text>
+              <Text style={styles.troubleshootingText}>
+                3. Verify your API endpoints are accessible
+              </Text>
+            </View>
+          )}
+          
           <TouchableOpacity style={styles.retryButton} onPress={handleRegenerateLesson}>
             <RefreshCw size={20} color="#ffffff" />
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <Text style={styles.retryButtonText}>Try AI Generation Again</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -209,7 +237,7 @@ export default function GenerateLessonScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.lessonHeader}>
           <View style={styles.successBadge}>
-            <Sparkles size={16} color="#10b981" />
+            <Brain size={16} color="#10b981" />
             <Text style={styles.successText}>AI Generated</Text>
           </View>
           
@@ -230,6 +258,7 @@ export default function GenerateLessonScreen() {
             </View>
             {lesson.wordCount && (
               <View style={styles.metaItem}>
+                <Zap size={16} color="#6b7280" />
                 <Text style={styles.metaText}>{lesson.wordCount} words</Text>
               </View>
             )}
@@ -237,14 +266,14 @@ export default function GenerateLessonScreen() {
           
           <View style={styles.generationInfo}>
             <Text style={styles.generationInfoText}>
-              Generated on {new Date(lesson.generatedAt).toLocaleDateString()} at {new Date(lesson.generatedAt).toLocaleTimeString()}
+              🤖 Generated by AI on {new Date(lesson.generatedAt).toLocaleDateString()} at {new Date(lesson.generatedAt).toLocaleTimeString()}
             </Text>
           </View>
         </View>
 
         {lesson.keyPoints && lesson.keyPoints.length > 0 && (
           <View style={styles.keyPointsSection}>
-            <Text style={styles.sectionTitle}>Key Learning Points</Text>
+            <Text style={styles.sectionTitle}>AI-Extracted Key Learning Points</Text>
             {lesson.keyPoints.map((point, index) => (
               <View key={index} style={styles.keyPoint}>
                 <View style={styles.keyPointBullet}>
@@ -258,6 +287,10 @@ export default function GenerateLessonScreen() {
 
         <View style={styles.contentSection}>
           <Text style={styles.sectionTitle}>AI Generated Lesson Content</Text>
+          <View style={styles.contentHeader}>
+            <Brain size={20} color="#6366f1" />
+            <Text style={styles.contentSubtitle}>Personalized educational content created by AI</Text>
+          </View>
           <ScrollView style={styles.contentScroll} nestedScrollEnabled={true}>
             <Text style={styles.contentText}>{lesson.content}</Text>
           </ScrollView>
@@ -266,7 +299,7 @@ export default function GenerateLessonScreen() {
         <View style={styles.actionsSection}>
           <TouchableOpacity style={styles.regenerateButton} onPress={handleRegenerateLesson}>
             <RefreshCw size={20} color="#6366f1" />
-            <Text style={styles.regenerateButtonText}>Generate New Lesson</Text>
+            <Text style={styles.regenerateButtonText}>Generate New AI Lesson</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.continueButton} onPress={handleContinueToVoiceSelection}>
@@ -362,7 +395,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-    minWidth: 280,
+    minWidth: 300,
   },
   stepItemActive: {
     shadowOpacity: 0.1,
@@ -371,6 +404,8 @@ const styles = StyleSheet.create({
   },
   stepItemCompleted: {
     backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
   },
   stepIconContainer: {
     width: 32,
@@ -527,6 +562,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  contentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  contentSubtitle: {
+    fontSize: 14,
+    color: '#6366f1',
+    marginLeft: 8,
+    fontWeight: '500',
+  },
   contentScroll: {
     maxHeight: 300,
   },
@@ -605,6 +651,24 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     marginBottom: 24,
+  },
+  troubleshootingContainer: {
+    backgroundColor: '#fef2f2',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    alignSelf: 'stretch',
+  },
+  troubleshootingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#dc2626',
+    marginBottom: 8,
+  },
+  troubleshootingText: {
+    fontSize: 14,
+    color: '#7f1d1d',
+    marginBottom: 4,
   },
   retryButton: {
     flexDirection: 'row',
