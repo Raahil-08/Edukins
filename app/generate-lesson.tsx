@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ArrowLeft, Sparkles, BookOpen, Clock, User, RefreshCw, Brain, Zap } from 'lucide-react-native';
+import { ArrowLeft, Sparkles, BookOpen, Clock, User, RefreshCw, Brain, Zap, Cpu, Database } from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -16,6 +16,7 @@ interface GeneratedLesson {
   keyPoints: string[];
   generatedAt: string;
   wordCount?: number;
+  avatar?: string;
 }
 
 export default function GenerateLessonScreen() {
@@ -23,6 +24,15 @@ export default function GenerateLessonScreen() {
   const [lesson, setLesson] = useState<GeneratedLesson | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [generationStep, setGenerationStep] = useState(0);
+
+  const generationSteps = [
+    { icon: Brain, text: 'Analyzing your topic...', color: '#10b981' },
+    { icon: Database, text: 'Accessing AI knowledge base...', color: '#f59e0b' },
+    { icon: Cpu, text: 'Generating personalized content...', color: '#6366f1' },
+    { icon: BookOpen, text: 'Structuring the lesson...', color: '#8b5cf6' },
+    { icon: Sparkles, text: 'Adding finishing touches...', color: '#ec4899' },
+  ];
 
   useEffect(() => {
     if (topic && grade) {
@@ -30,13 +40,32 @@ export default function GenerateLessonScreen() {
     }
   }, [topic, grade]);
 
+  useEffect(() => {
+    if (isGenerating) {
+      const interval = setInterval(() => {
+        setGenerationStep(prev => {
+          if (prev < generationSteps.length - 1) {
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isGenerating]);
+
   const generateLesson = async () => {
     try {
       setIsGenerating(true);
       setError(null);
+      setGenerationStep(0);
       
-      // Call API to generate lesson
+      // Call API to generate lesson with AI
+      console.log('Generating lesson for:', { topic, grade });
       const generatedLesson = await apiService.generateLesson(topic!, parseInt(grade!));
+      console.log('Generated lesson:', generatedLesson);
+      
       setLesson(generatedLesson);
       
     } catch (err: any) {
@@ -44,6 +73,7 @@ export default function GenerateLessonScreen() {
       setError(err.message);
     } finally {
       setIsGenerating(false);
+      setGenerationStep(0);
     }
   };
 
@@ -72,34 +102,67 @@ export default function GenerateLessonScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <ArrowLeft size={24} color="#1f2937" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Generating Lesson</Text>
+          <Text style={styles.headerTitle}>AI Generating Lesson</Text>
         </View>
         <LoadingSpinner message="AI is creating your personalized lesson..." />
         <View style={styles.generatingInfo}>
           <View style={styles.brainIcon}>
             <Brain size={40} color="#6366f1" />
           </View>
-          <Text style={styles.generatingTitle}>Creating Your Lesson</Text>
+          <Text style={styles.generatingTitle}>Creating Your AI Lesson</Text>
           <Text style={styles.generatingSubtitle}>
             Our AI is crafting a personalized lesson about "{topic}" for Grade {grade}
           </Text>
           <View style={styles.processingSteps}>
-            <View style={styles.stepItem}>
-              <Zap size={16} color="#10b981" />
-              <Text style={styles.stepText}>Analyzing your topic...</Text>
-            </View>
-            <View style={styles.stepItem}>
-              <BookOpen size={16} color="#f59e0b" />
-              <Text style={styles.stepText}>Gathering educational content...</Text>
-            </View>
-            <View style={styles.stepItem}>
-              <User size={16} color="#6366f1" />
-              <Text style={styles.stepText}>Adapting for Grade {grade} level...</Text>
-            </View>
-            <View style={styles.stepItem}>
-              <Sparkles size={16} color="#8b5cf6" />
-              <Text style={styles.stepText}>Structuring the lesson...</Text>
-            </View>
+            {generationSteps.map((step, index) => {
+              const StepIcon = step.icon;
+              const isActive = index <= generationStep;
+              const isCompleted = index < generationStep;
+              
+              return (
+                <View 
+                  key={index} 
+                  style={[
+                    styles.stepItem,
+                    isActive && styles.stepItemActive,
+                    isCompleted && styles.stepItemCompleted
+                  ]}
+                >
+                  <View style={[
+                    styles.stepIconContainer,
+                    { backgroundColor: isActive ? `${step.color}20` : '#f3f4f6' }
+                  ]}>
+                    <StepIcon 
+                      size={16} 
+                      color={isActive ? step.color : '#9ca3af'} 
+                    />
+                  </View>
+                  <Text style={[
+                    styles.stepText,
+                    isActive && { color: step.color, fontWeight: '600' }
+                  ]}>
+                    {step.text}
+                  </Text>
+                  {isCompleted && (
+                    <View style={styles.checkmark}>
+                      <Text style={styles.checkmarkText}>✓</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+          
+          <View style={styles.aiInfo}>
+            <Text style={styles.aiInfoText}>
+              🤖 Powered by advanced AI technology
+            </Text>
+            <Text style={styles.aiInfoText}>
+              📚 Generating grade-appropriate content
+            </Text>
+            <Text style={styles.aiInfoText}>
+              ⚡ Personalizing for your learning style
+            </Text>
           </View>
         </View>
       </SafeAreaView>
@@ -116,7 +179,10 @@ export default function GenerateLessonScreen() {
           <Text style={styles.headerTitle}>Generation Failed</Text>
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <View style={styles.errorIcon}>
+            <Brain size={32} color="#ef4444" />
+          </View>
+          <Text style={styles.errorTitle}>Oops! AI Generation Failed</Text>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRegenerateLesson}>
             <RefreshCw size={20} color="#ffffff" />
@@ -137,7 +203,7 @@ export default function GenerateLessonScreen() {
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <ArrowLeft size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Generated Lesson</Text>
+        <Text style={styles.headerTitle}>AI Generated Lesson</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -168,6 +234,12 @@ export default function GenerateLessonScreen() {
               </View>
             )}
           </View>
+          
+          <View style={styles.generationInfo}>
+            <Text style={styles.generationInfoText}>
+              Generated on {new Date(lesson.generatedAt).toLocaleDateString()} at {new Date(lesson.generatedAt).toLocaleTimeString()}
+            </Text>
+          </View>
         </View>
 
         {lesson.keyPoints && lesson.keyPoints.length > 0 && (
@@ -185,7 +257,7 @@ export default function GenerateLessonScreen() {
         )}
 
         <View style={styles.contentSection}>
-          <Text style={styles.sectionTitle}>Lesson Content</Text>
+          <Text style={styles.sectionTitle}>AI Generated Lesson Content</Text>
           <ScrollView style={styles.contentScroll} nestedScrollEnabled={true}>
             <Text style={styles.contentText}>{lesson.content}</Text>
           </ScrollView>
@@ -194,7 +266,7 @@ export default function GenerateLessonScreen() {
         <View style={styles.actionsSection}>
           <TouchableOpacity style={styles.regenerateButton} onPress={handleRegenerateLesson}>
             <RefreshCw size={20} color="#6366f1" />
-            <Text style={styles.regenerateButtonText}>Regenerate Lesson</Text>
+            <Text style={styles.regenerateButtonText}>Generate New Lesson</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.continueButton} onPress={handleContinueToVoiceSelection}>
@@ -273,6 +345,7 @@ const styles = StyleSheet.create({
   processingSteps: {
     gap: 16,
     alignItems: 'flex-start',
+    marginBottom: 32,
   },
   stepItem: {
     flexDirection: 'row',
@@ -289,11 +362,53 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    minWidth: 280,
+  },
+  stepItemActive: {
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  stepItemCompleted: {
+    backgroundColor: '#f0fdf4',
+  },
+  stepIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   stepText: {
     fontSize: 14,
     color: '#374151',
-    marginLeft: 8,
+    fontWeight: '500',
+    flex: 1,
+  },
+  checkmark: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#10b981',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmarkText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  aiInfo: {
+    backgroundColor: '#f0f9ff',
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  aiInfoText: {
+    fontSize: 12,
+    color: '#0369a1',
+    textAlign: 'center',
     fontWeight: '500',
   },
   lessonHeader: {
@@ -328,6 +443,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 16,
+    marginBottom: 12,
   },
   metaItem: {
     flexDirection: 'row',
@@ -338,6 +454,16 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginLeft: 6,
     fontWeight: '500',
+  },
+  generationInfo: {
+    backgroundColor: '#f9fafb',
+    padding: 12,
+    borderRadius: 8,
+  },
+  generationInfoText: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
   },
   keyPointsSection: {
     backgroundColor: '#ffffff',
@@ -457,6 +583,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
+  },
+  errorIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#fef2f2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   errorTitle: {
     fontSize: 20,

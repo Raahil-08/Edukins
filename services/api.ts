@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5001/api'; // Updated port to 5001
+const BASE_URL = 'http://localhost:5050/api'; // Updated to match your backend port
 
 class ApiService {
   private client;
@@ -9,7 +9,7 @@ class ApiService {
   constructor() {
     this.client = axios.create({
       baseURL: BASE_URL,
-      timeout: 30000, // Increased timeout for AI generation
+      timeout: 60000, // Increased timeout for AI generation (60 seconds)
       headers: {
         'Content-Type': 'application/json',
       },
@@ -95,14 +95,30 @@ class ApiService {
     }
   }
 
-  async generateLesson(topic: string, grade: number) {
+  async generateLesson(topic: string, grade: number, avatar: string = 'Professor Nova') {
     try {
-      const response = await this.client.post('/lesson/generate', { 
-        topic, 
-        grade,
-        timestamp: Date.now() // Add timestamp for uniqueness
+      // Use the correct endpoint structure from your backend
+      const response = await this.client.post('/lesson', { 
+        subject: this.getSubjectFromTopic(topic),
+        grade: grade,
+        topic: topic,
+        avatar: avatar
       });
-      return response.data;
+      
+      // Transform the response to match our expected format
+      const lesson = response.data;
+      return {
+        id: lesson.id || `generated_${Date.now()}`,
+        topic: lesson.topic || topic,
+        grade: lesson.grade || grade,
+        content: lesson.script || lesson.content,
+        keyPoints: lesson.keyPoints || this.extractKeyPoints(lesson.script || lesson.content),
+        estimatedDuration: lesson.duration || this.estimateDuration(lesson.script || lesson.content),
+        difficulty: lesson.difficulty || this.getDifficultyFromGrade(grade),
+        generatedAt: new Date().toISOString(),
+        wordCount: lesson.script ? lesson.script.split(' ').length : 0,
+        avatar: lesson.avatar || avatar
+      };
     } catch (error: any) {
       if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
         // Backend not available, use mock generation
@@ -115,6 +131,9 @@ class ApiService {
       }
       if (error.response?.status === 429) {
         throw new Error('Too many requests. Please wait a moment and try again.');
+      }
+      if (error.response?.status === 500) {
+        throw new Error('AI service is temporarily unavailable. Please try again in a moment.');
       }
       throw new Error(`Failed to generate lesson: ${error.message}`);
     }
@@ -165,7 +184,91 @@ class ApiService {
     }
   }
 
-  // Mock lesson generation for demo purposes
+  // Helper methods
+  private getSubjectFromTopic(topic: string): string {
+    const topicLower = topic.toLowerCase();
+    
+    if (topicLower.includes('math') || topicLower.includes('algebra') || topicLower.includes('geometry') || 
+        topicLower.includes('fraction') || topicLower.includes('number') || topicLower.includes('calculation')) {
+      return 'Math';
+    }
+    
+    if (topicLower.includes('science') || topicLower.includes('chemistry') || topicLower.includes('physics') || 
+        topicLower.includes('biology') || topicLower.includes('solar') || topicLower.includes('planet') ||
+        topicLower.includes('animal') || topicLower.includes('plant') || topicLower.includes('chemical')) {
+      return 'Science';
+    }
+    
+    if (topicLower.includes('history') || topicLower.includes('ancient') || topicLower.includes('war') || 
+        topicLower.includes('civilization') || topicLower.includes('empire') || topicLower.includes('revolution')) {
+      return 'History';
+    }
+    
+    if (topicLower.includes('geography') || topicLower.includes('continent') || topicLower.includes('country') || 
+        topicLower.includes('ocean') || topicLower.includes('mountain') || topicLower.includes('climate')) {
+      return 'Geography';
+    }
+    
+    if (topicLower.includes('english') || topicLower.includes('writing') || topicLower.includes('grammar') || 
+        topicLower.includes('reading') || topicLower.includes('literature') || topicLower.includes('story')) {
+      return 'English';
+    }
+    
+    if (topicLower.includes('art') || topicLower.includes('drawing') || topicLower.includes('painting') || 
+        topicLower.includes('color') || topicLower.includes('artist')) {
+      return 'Art';
+    }
+    
+    // Default to Science for general topics
+    return 'Science';
+  }
+
+  private extractKeyPoints(content: string): string[] {
+    if (!content) return [];
+    
+    // Simple extraction of key points from content
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    const keyPoints = [];
+    
+    // Look for sentences that seem like key points
+    for (const sentence of sentences.slice(0, 10)) { // Limit to first 10 sentences
+      const trimmed = sentence.trim();
+      if (trimmed.length > 30 && trimmed.length < 150) {
+        // Look for sentences that start with key phrases
+        if (trimmed.match(/^(First|Second|Third|Next|Finally|Remember|Important|Key|Main)/i) ||
+            trimmed.includes('is important') || trimmed.includes('helps us') || 
+            trimmed.includes('we learn') || trimmed.includes('understand')) {
+          keyPoints.push(trimmed);
+          if (keyPoints.length >= 5) break;
+        }
+      }
+    }
+    
+    // If we don't have enough key points, add some generic ones
+    if (keyPoints.length < 3) {
+      keyPoints.push(`Understanding the fundamentals of the topic`);
+      keyPoints.push(`Real-world applications and examples`);
+      keyPoints.push(`Key concepts and important details`);
+    }
+    
+    return keyPoints.slice(0, 6); // Limit to 6 key points
+  }
+
+  private estimateDuration(content: string): string {
+    if (!content) return '5 min';
+    
+    const wordCount = content.split(' ').length;
+    const estimatedMinutes = Math.ceil(wordCount / 200); // 200 words per minute reading speed
+    return `${estimatedMinutes} min`;
+  }
+
+  private getDifficultyFromGrade(grade: number): string {
+    if (grade <= 3) return 'Beginner';
+    if (grade <= 6) return 'Intermediate';
+    return 'Advanced';
+  }
+
+  // Mock lesson generation for demo purposes (fallback)
   private generateMockLesson(topic: string, grade: number) {
     const lessonTemplates = [
       {
@@ -214,7 +317,8 @@ Keep asking questions about {topic} - curiosity is the key to great learning! Th
       keyPoints: keyPoints,
       estimatedDuration: `${estimatedMinutes} min`,
       difficulty: grade <= 3 ? 'Beginner' : grade <= 5 ? 'Intermediate' : 'Advanced',
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
+      wordCount: wordCount
     };
   }
 
