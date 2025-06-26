@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ArrowLeft, Sparkles, BookOpen, Clock, User, RefreshCw } from 'lucide-react-native';
+import { ArrowLeft, Sparkles, BookOpen, Clock, User, RefreshCw, Brain, Zap } from 'lucide-react-native';
 import { apiService } from '@/services/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -15,6 +15,7 @@ interface GeneratedLesson {
   difficulty: string;
   keyPoints: string[];
   generatedAt: string;
+  wordCount?: number;
 }
 
 export default function GenerateLessonScreen() {
@@ -75,18 +76,30 @@ export default function GenerateLessonScreen() {
         </View>
         <LoadingSpinner message="AI is creating your personalized lesson..." />
         <View style={styles.generatingInfo}>
-          <View style={styles.sparkleIcon}>
-            <Sparkles size={32} color="#6366f1" />
+          <View style={styles.brainIcon}>
+            <Brain size={40} color="#6366f1" />
           </View>
           <Text style={styles.generatingTitle}>Creating Your Lesson</Text>
           <Text style={styles.generatingSubtitle}>
             Our AI is crafting a personalized lesson about "{topic}" for Grade {grade}
           </Text>
           <View style={styles.processingSteps}>
-            <Text style={styles.stepText}>✨ Analyzing your topic...</Text>
-            <Text style={styles.stepText}>📚 Gathering educational content...</Text>
-            <Text style={styles.stepText}>🎯 Adapting for Grade {grade} level...</Text>
-            <Text style={styles.stepText}>📝 Structuring the lesson...</Text>
+            <View style={styles.stepItem}>
+              <Zap size={16} color="#10b981" />
+              <Text style={styles.stepText}>Analyzing your topic...</Text>
+            </View>
+            <View style={styles.stepItem}>
+              <BookOpen size={16} color="#f59e0b" />
+              <Text style={styles.stepText}>Gathering educational content...</Text>
+            </View>
+            <View style={styles.stepItem}>
+              <User size={16} color="#6366f1" />
+              <Text style={styles.stepText}>Adapting for Grade {grade} level...</Text>
+            </View>
+            <View style={styles.stepItem}>
+              <Sparkles size={16} color="#8b5cf6" />
+              <Text style={styles.stepText}>Structuring the lesson...</Text>
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -127,7 +140,7 @@ export default function GenerateLessonScreen() {
         <Text style={styles.headerTitle}>Generated Lesson</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.lessonHeader}>
           <View style={styles.successBadge}>
             <Sparkles size={16} color="#10b981" />
@@ -149,6 +162,11 @@ export default function GenerateLessonScreen() {
               <User size={16} color="#6b7280" />
               <Text style={styles.metaText}>{lesson.difficulty}</Text>
             </View>
+            {lesson.wordCount && (
+              <View style={styles.metaItem}>
+                <Text style={styles.metaText}>{lesson.wordCount} words</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -157,7 +175,9 @@ export default function GenerateLessonScreen() {
             <Text style={styles.sectionTitle}>Key Learning Points</Text>
             {lesson.keyPoints.map((point, index) => (
               <View key={index} style={styles.keyPoint}>
-                <Text style={styles.keyPointBullet}>•</Text>
+                <View style={styles.keyPointBullet}>
+                  <Text style={styles.keyPointNumber}>{index + 1}</Text>
+                </View>
                 <Text style={styles.keyPointText}>{point}</Text>
               </View>
             ))}
@@ -178,7 +198,8 @@ export default function GenerateLessonScreen() {
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.continueButton} onPress={handleContinueToVoiceSelection}>
-            <Text style={styles.continueButtonText}>Choose Voice & Listen</Text>
+            <Sparkles size={20} color="#ffffff" />
+            <Text style={styles.continueButtonText}>Choose Voice & Generate Audio</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -218,17 +239,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
-  sparkleIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  brainIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#e0e7ff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
+    shadowColor: '#6366f1',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   generatingTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     color: '#1f2937',
     textAlign: 'center',
@@ -242,12 +271,30 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   processingSteps: {
-    gap: 12,
+    gap: 16,
+    alignItems: 'flex-start',
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   stepText: {
     fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
+    color: '#374151',
+    marginLeft: 8,
+    fontWeight: '500',
   },
   lessonHeader: {
     backgroundColor: '#ffffff',
@@ -316,14 +363,22 @@ const styles = StyleSheet.create({
   keyPoint: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   keyPointBullet: {
-    fontSize: 16,
-    color: '#6366f1',
-    fontWeight: '700',
-    marginRight: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#6366f1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
     marginTop: 2,
+  },
+  keyPointNumber: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   keyPointText: {
     flex: 1,
@@ -380,6 +435,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
     shadowColor: '#6366f1',
     shadowOffset: {
       width: 0,
@@ -393,6 +450,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
+    marginLeft: 8,
   },
   errorContainer: {
     flex: 1,

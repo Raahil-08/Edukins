@@ -3,13 +3,45 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { BookOpen, Sparkles, Send, Lightbulb, Globe, Calculator, Atom, Clock } from 'lucide-react-native';
+import { BookOpen, Sparkles, Send, Lightbulb, Globe, Calculator, Atom, Clock, Brain, Palette } from 'lucide-react-native';
 
 const SUBJECT_SUGGESTIONS = [
-  { name: 'Science', icon: Atom, color: '#10b981', topics: ['Solar System', 'Chemical Reactions', 'Human Body', 'Plants & Animals'] },
-  { name: 'Math', icon: Calculator, color: '#f59e0b', topics: ['Fractions', 'Geometry', 'Algebra', 'Statistics'] },
-  { name: 'History', icon: Clock, color: '#ef4444', topics: ['Ancient Egypt', 'World Wars', 'Renaissance', 'Industrial Revolution'] },
-  { name: 'Geography', icon: Globe, color: '#8b5cf6', topics: ['Continents', 'Climate', 'Countries', 'Natural Disasters'] },
+  { 
+    name: 'Science', 
+    icon: Atom, 
+    color: '#10b981', 
+    topics: ['Solar System', 'Chemical Reactions', 'Human Body', 'Plants & Animals', 'Weather & Climate', 'Forces & Motion'] 
+  },
+  { 
+    name: 'Math', 
+    icon: Calculator, 
+    color: '#f59e0b', 
+    topics: ['Fractions', 'Geometry', 'Algebra', 'Statistics', 'Multiplication', 'Problem Solving'] 
+  },
+  { 
+    name: 'History', 
+    icon: Clock, 
+    color: '#ef4444', 
+    topics: ['Ancient Egypt', 'World Wars', 'Renaissance', 'Industrial Revolution', 'American History', 'Medieval Times'] 
+  },
+  { 
+    name: 'Geography', 
+    icon: Globe, 
+    color: '#8b5cf6', 
+    topics: ['Continents', 'Climate', 'Countries', 'Natural Disasters', 'Oceans', 'Mountains'] 
+  },
+  { 
+    name: 'English', 
+    icon: BookOpen, 
+    color: '#6366f1', 
+    topics: ['Creative Writing', 'Grammar', 'Reading Comprehension', 'Poetry', 'Storytelling', 'Vocabulary'] 
+  },
+  { 
+    name: 'Art', 
+    icon: Palette, 
+    color: '#ec4899', 
+    topics: ['Drawing Basics', 'Color Theory', 'Famous Artists', 'Art History', 'Painting Techniques', 'Sculpture'] 
+  },
 ];
 
 export default function HomeScreen() {
@@ -21,6 +53,11 @@ export default function HomeScreen() {
   const handleGenerateLesson = async () => {
     if (!studyTopic.trim()) {
       Alert.alert('Missing Topic', 'Please enter what you want to study!');
+      return;
+    }
+
+    if (studyTopic.trim().length < 3) {
+      Alert.alert('Topic Too Short', 'Please enter at least 3 characters for your topic.');
       return;
     }
 
@@ -52,7 +89,7 @@ export default function HomeScreen() {
     return (
       <View key={index} style={styles.subjectCard}>
         <View style={[styles.subjectIcon, { backgroundColor: `${subject.color}20` }]}>
-          <IconComponent size={24} color={subject.color} />
+          <IconComponent size={28} color={subject.color} />
         </View>
         <Text style={styles.subjectName}>{subject.name}</Text>
         <View style={styles.topicsContainer}>
@@ -61,6 +98,7 @@ export default function HomeScreen() {
               key={topicIndex}
               style={[styles.topicChip, { borderColor: subject.color }]}
               onPress={() => handleSuggestionPress(topic)}
+              activeOpacity={0.7}
             >
               <Text style={[styles.topicText, { color: subject.color }]}>{topic}</Text>
             </TouchableOpacity>
@@ -72,7 +110,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.welcomeSection}>
             <Text style={styles.title}>Hello, {user?.name || 'Student'}! 👋</Text>
@@ -80,7 +118,7 @@ export default function HomeScreen() {
           </View>
           
           <View style={styles.sparkleContainer}>
-            <Sparkles size={32} color="#6366f1" />
+            <Brain size={32} color="#6366f1" />
           </View>
         </View>
 
@@ -95,6 +133,8 @@ export default function HomeScreen() {
               onChangeText={setStudyTopic}
               multiline
               maxLength={200}
+              returnKeyType="done"
+              blurOnSubmit={true}
             />
           </View>
           
@@ -109,6 +149,7 @@ export default function HomeScreen() {
                     selectedGrade === grade && styles.gradeButtonActive
                   ]}
                   onPress={() => setSelectedGrade(grade)}
+                  activeOpacity={0.7}
                 >
                   <Text style={[
                     styles.gradeButtonText,
@@ -128,10 +169,15 @@ export default function HomeScreen() {
             ]}
             onPress={handleGenerateLesson}
             disabled={!studyTopic.trim() || isGenerating}
+            activeOpacity={0.8}
           >
-            <Send size={20} color="#ffffff" />
+            {isGenerating ? (
+              <Sparkles size={20} color="#ffffff" />
+            ) : (
+              <Send size={20} color="#ffffff" />
+            )}
             <Text style={styles.generateButtonText}>
-              {isGenerating ? 'Generating Lesson...' : 'Generate AI Lesson'}
+              {isGenerating ? 'Generating AI Lesson...' : 'Generate AI Lesson'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -150,10 +196,30 @@ export default function HomeScreen() {
         <View style={styles.featuresSection}>
           <Text style={styles.featuresTitle}>✨ What makes our lessons special?</Text>
           <View style={styles.featuresList}>
-            <Text style={styles.featureItem}>🤖 AI-generated content tailored to your grade</Text>
-            <Text style={styles.featureItem}>🎭 Multiple voice options for audio playback</Text>
-            <Text style={styles.featureItem}>📚 Comprehensive explanations with examples</Text>
-            <Text style={styles.featureItem}>🎯 Personalized learning experience</Text>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>🤖</Text>
+              <Text style={styles.featureText}>AI-generated content tailored to your grade level</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>🎭</Text>
+              <Text style={styles.featureText}>Multiple AI teacher personalities with unique voices</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>🔊</Text>
+              <Text style={styles.featureText}>High-quality text-to-speech audio narration</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>📚</Text>
+              <Text style={styles.featureText}>Comprehensive explanations with key learning points</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>🎯</Text>
+              <Text style={styles.featureText}>Personalized learning experience for every student</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Text style={styles.featureIcon}>⚡</Text>
+              <Text style={styles.featureText}>Instant lesson generation on any topic</Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -183,7 +249,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     color: '#1f2937',
     marginBottom: 4,
@@ -191,14 +257,23 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#6b7280',
+    lineHeight: 22,
   },
   sparkleContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#e0e7ff',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#6366f1',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   inputSection: {
     padding: 20,
@@ -226,6 +301,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     minHeight: 60,
     textAlignVertical: 'top',
+    lineHeight: 22,
   },
   gradeSelector: {
     marginBottom: 24,
@@ -243,15 +319,25 @@ const styles = StyleSheet.create({
   },
   gradeButton: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: '#f3f4f6',
     borderWidth: 1,
     borderColor: '#d1d5db',
+    minWidth: 44,
+    alignItems: 'center',
   },
   gradeButtonActive: {
     backgroundColor: '#6366f1',
     borderColor: '#6366f1',
+    shadowColor: '#6366f1',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   gradeButtonText: {
     fontSize: 14,
@@ -296,7 +382,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   suggestionsTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1f2937',
     marginLeft: 8,
@@ -306,7 +392,7 @@ const styles = StyleSheet.create({
   },
   subjectCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
     shadowColor: '#000',
     shadowOffset: {
@@ -318,15 +404,15 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   subjectIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   subjectName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1f2937',
     marginBottom: 12,
@@ -353,7 +439,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   featuresTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1f2937',
     marginBottom: 16,
@@ -362,6 +448,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  featureIcon: {
+    fontSize: 16,
+    marginRight: 12,
+    marginTop: 2,
+  },
+  featureText: {
+    flex: 1,
     fontSize: 14,
     color: '#6b7280',
     lineHeight: 20,
