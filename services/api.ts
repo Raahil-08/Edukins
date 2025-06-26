@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = 'http://localhost:5001/api'; // Updated port to 5001
 
 class ApiService {
   private client;
