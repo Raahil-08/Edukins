@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5050/api'; // Updated to match your backend port
+const BASE_URL = 'http://localhost:5050/api'; // Your actual backend port
 
 class ApiService {
   private client;
@@ -97,6 +97,15 @@ class ApiService {
 
   async generateLesson(topic: string, grade: number, avatar: string = 'Professor Nova') {
     try {
+      console.log('🚀 Calling backend lesson generation API...');
+      console.log('📍 URL:', `${BASE_URL}/lesson`);
+      console.log('📝 Payload:', { 
+        subject: this.getSubjectFromTopic(topic),
+        grade: grade,
+        topic: topic,
+        avatar: avatar
+      });
+
       // Use the correct endpoint structure from your backend
       const response = await this.client.post('/lesson', { 
         subject: this.getSubjectFromTopic(topic),
@@ -104,6 +113,8 @@ class ApiService {
         topic: topic,
         avatar: avatar
       });
+      
+      console.log('✅ Backend response:', response.data);
       
       // Transform the response to match our expected format
       const lesson = response.data;
@@ -120,9 +131,11 @@ class ApiService {
         avatar: lesson.avatar || avatar
       };
     } catch (error: any) {
+      console.error('❌ Backend API Error:', error);
+      
       if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
         // Backend not available, use mock generation
-        console.warn('Backend not available, using mock lesson generation');
+        console.warn('⚠️ Backend not available, using mock lesson generation');
         return this.generateMockLesson(topic, grade);
       }
       
@@ -195,7 +208,8 @@ class ApiService {
     
     if (topicLower.includes('science') || topicLower.includes('chemistry') || topicLower.includes('physics') || 
         topicLower.includes('biology') || topicLower.includes('solar') || topicLower.includes('planet') ||
-        topicLower.includes('animal') || topicLower.includes('plant') || topicLower.includes('chemical')) {
+        topicLower.includes('animal') || topicLower.includes('plant') || topicLower.includes('chemical') ||
+        topicLower.includes('matter') || topicLower.includes('volcano') || topicLower.includes('dinosaur')) {
       return 'Science';
     }
     

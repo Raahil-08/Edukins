@@ -20,7 +20,46 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-// Generate lesson endpoint
+// 🧠 Create AI Lesson (OpenAI) - Main endpoint matching your HTTP test
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const { subject, grade, topic, avatar } = req.body;
+
+    console.log('🚀 Received lesson generation request:', { subject, grade, topic, avatar });
+
+    // Validate input
+    if (!topic || !grade) {
+      return res.status(400).json({ 
+        message: 'Topic and grade are required' 
+      });
+    }
+
+    if (grade < 1 || grade > 12) {
+      return res.status(400).json({ 
+        message: 'Grade must be between 1 and 12' 
+      });
+    }
+
+    // Simulate AI lesson generation delay
+    console.log('🤖 Generating AI lesson...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Generate lesson content based on topic and grade
+    const generatedLesson = generateLessonContent(topic, grade, subject, avatar);
+
+    console.log('✅ Lesson generated successfully:', generatedLesson.id);
+
+    res.json({
+      message: 'Lesson generated successfully',
+      ...generatedLesson
+    });
+  } catch (error) {
+    console.error('❌ Lesson generation error:', error);
+    res.status(500).json({ message: 'Failed to generate lesson' });
+  }
+});
+
+// Legacy endpoint for backward compatibility
 router.post('/generate', authenticateToken, async (req, res) => {
   try {
     const { topic, grade } = req.body;
@@ -54,11 +93,86 @@ router.post('/generate', authenticateToken, async (req, res) => {
   }
 });
 
+// Get all lessons for the authenticated user
+router.get('/', authenticateToken, (req, res) => {
+  try {
+    // Return mock lessons for demo
+    const mockLessons = [
+      {
+        id: '1',
+        subject: 'Science',
+        grade: 5,
+        topic: 'The Solar System',
+        avatar: 'Professor Nova',
+        duration: '15 min',
+        difficulty: 'Intermediate'
+      },
+      {
+        id: '2',
+        subject: 'Math',
+        grade: 4,
+        topic: 'Fractions and Decimals',
+        avatar: 'Math Wizard',
+        duration: '12 min',
+        difficulty: 'Beginner'
+      }
+    ];
+
+    res.json(mockLessons);
+  } catch (error) {
+    console.error('Error fetching lessons:', error);
+    res.status(500).json({ message: 'Failed to fetch lessons' });
+  }
+});
+
+// Get specific lesson by ID
+router.get('/:id', authenticateToken, (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Return mock lesson for demo
+    const mockLesson = {
+      id: id,
+      subject: 'Science',
+      grade: 5,
+      topic: 'The Solar System',
+      avatar: 'Professor Nova',
+      script: 'Welcome to our exciting journey through the Solar System...',
+      duration: '15 min',
+      difficulty: 'Intermediate'
+    };
+
+    res.json(mockLesson);
+  } catch (error) {
+    console.error('Error fetching lesson:', error);
+    res.status(500).json({ message: 'Failed to fetch lesson' });
+  }
+});
+
+// Get lesson audio
+router.get('/:id/audio', authenticateToken, (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Return mock audio response
+    res.status(200).json({ 
+      message: 'Audio endpoint - would return audio file in production',
+      lessonId: id,
+      audioUrl: `http://localhost:5050/api/lesson/${id}/audio/file`
+    });
+  } catch (error) {
+    console.error('Error fetching lesson audio:', error);
+    res.status(500).json({ message: 'Failed to fetch lesson audio' });
+  }
+});
+
 // Helper function to generate lesson content
-function generateLessonContent(topic, grade) {
+function generateLessonContent(topic, grade, subject = 'Science', avatar = 'Professor Nova') {
+  console.log('📝 Generating content for:', { topic, grade, subject, avatar });
+
   const lessonTemplates = {
     elementary: {
-      template: `Welcome to our exciting lesson about {topic}! Today we'll explore this fascinating subject in a way that's perfect for Grade {grade} students.
+      template: `Welcome to our exciting lesson about {topic}! I'm {avatar}, and today we'll explore this fascinating subject in a way that's perfect for Grade {grade} students.
 
 {topic} is an important topic that helps us understand the world around us. Let's start by learning the basics and then discover some amazing facts!
 
@@ -87,7 +201,7 @@ Keep exploring and asking questions about {topic} - that's how great learners di
       ]
     },
     intermediate: {
-      template: `Welcome to our comprehensive lesson about {topic}! Today we'll dive deep into this fascinating subject, exploring concepts that are perfect for Grade {grade} students.
+      template: `Welcome to our comprehensive lesson about {topic}! I'm {avatar}, and today we'll dive deep into this fascinating subject, exploring concepts that are perfect for Grade {grade} students.
 
 {topic} is a crucial area of study that helps us understand complex systems and relationships in our world. Let's begin by examining the fundamental principles and then explore more advanced concepts.
 
@@ -120,7 +234,7 @@ Remember, mastering {topic} takes time and practice. Don't be discouraged if som
       ]
     },
     advanced: {
-      template: `Welcome to our advanced exploration of {topic}! In this comprehensive lesson designed for Grade {grade} students, we'll examine the sophisticated concepts and complex relationships that define this important field of study.
+      template: `Welcome to our advanced exploration of {topic}! I'm {avatar}, and in this comprehensive lesson designed for Grade {grade} students, we'll examine the sophisticated concepts and complex relationships that define this important field of study.
 
 {topic} represents a complex and multifaceted area of knowledge that requires analytical thinking, critical evaluation, and the ability to synthesize information from multiple sources. Our investigation will cover both theoretical foundations and practical applications.
 
@@ -167,10 +281,11 @@ The journey of learning about {topic} is ongoing. Even experts in the field cont
     template = lessonTemplates.advanced;
   }
 
-  // Replace placeholders with actual topic and grade
+  // Replace placeholders with actual topic, grade, and avatar
   const content = template.template
     .replace(/{topic}/g, topic)
-    .replace(/{grade}/g, grade.toString());
+    .replace(/{grade}/g, grade.toString())
+    .replace(/{avatar}/g, avatar);
 
   const keyPoints = template.keyPoints.map(point => 
     point.replace(/{topic}/g, topic)
@@ -190,17 +305,30 @@ The journey of learning about {topic} is ongoing. Even experts in the field cont
     difficulty = 'Advanced';
   }
 
-  return {
+  const lesson = {
     id: `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     topic: topic,
     grade: grade,
-    content: content,
+    subject: subject,
+    avatar: avatar,
+    script: content, // Use 'script' to match your expected format
+    content: content, // Also provide 'content' for compatibility
     keyPoints: keyPoints,
+    duration: `${estimatedMinutes} min`,
     estimatedDuration: `${estimatedMinutes} min`,
     difficulty: difficulty,
     generatedAt: new Date().toISOString(),
     wordCount: wordCount
   };
+
+  console.log('✅ Generated lesson:', {
+    id: lesson.id,
+    topic: lesson.topic,
+    wordCount: lesson.wordCount,
+    duration: lesson.duration
+  });
+
+  return lesson;
 }
 
 module.exports = router;
