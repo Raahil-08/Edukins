@@ -108,7 +108,6 @@ export default function GenerateLessonScreen() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>AI Generating Lesson</Text>
         </View>
-        <LoadingSpinner message="AI is creating your personalized lesson..." />
         <View style={styles.generatingInfo}>
           <View style={styles.brainIcon}>
             <Brain size={40} color="#6366f1" />
@@ -160,21 +159,6 @@ export default function GenerateLessonScreen() {
                 </View>
               );
             })}
-          </View>
-          
-          <View style={styles.aiInfo}>
-            <Text style={styles.aiInfoText}>
-              🤖 Powered by advanced AI technology
-            </Text>
-            <Text style={styles.aiInfoText}>
-              📚 Generating grade-appropriate content
-            </Text>
-            <Text style={styles.aiInfoText}>
-              ⚡ Personalizing for your learning style
-            </Text>
-            <Text style={styles.aiInfoText}>
-              🎯 Creating unique educational content
-            </Text>
           </View>
         </View>
       </SafeAreaView>
