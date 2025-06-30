@@ -1,27 +1,39 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
 
-import authRoutes from './routes/auth.routes.js';
-import userRoutes from './routes/user.routes.js';
-import lessonRoutes from './routes/lesson.routes.js';
-import quizRoutes from './routes/quiz.routes.js';
-import avatarRoutes from './routes/avatar.routes.js';
-
-dotenv.config();
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// Middleware
+app.use(cors({
+  origin: ['http://localhost:8081', 'http://localhost:19006', 'http://localhost:3000'],
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' })); // Increased limit for TTS requests
 
-app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/lesson', lessonRoutes);
-app.use('/api/quiz', quizRoutes);
-app.use('/api/avatar', avatarRoutes);
-
-app.get('/', (req, res) => {
-  res.send('🌟 EDUKINS backend is running!');
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Edukins backend is running' });
 });
 
-export default app;
+// Routes
+app.use('/api/auth', require('./routes/auth.routes'));
+app.use('/api/user', require('./routes/user.routes'));
+app.use('/api/lesson', require('./routes/lesson.routes'));
+app.use('/api/tts', require('./routes/tts.routes'));
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
+
+module.exports = app;

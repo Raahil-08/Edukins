@@ -1,16 +1,19 @@
-import pg from 'pg';
-import dotenv from 'dotenv';
-dotenv.config();
+// Mock database connection functions
+// In production, replace with actual database connections
 
-const { Pool } = pg;
-
-const pgPool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
-});
-
-export async function connectPostgres() {
-  await pgPool.connect();
-  console.log("✅ PostgreSQL connected");
+async function connectPostgres() {
+  // Mock PostgreSQL connection
+  console.log('📊 PostgreSQL connection simulated (no actual database required for demo)');
+  return Promise.resolve();
 }
 
-export { pgPool };
+async function connectMongo() {
+  // Mock MongoDB connection  
+  console.log('🍃 MongoDB connection simulated (no actual database required for demo)');
+  return Promise.resolve();
+}
+
+module.exports = {
+  connectPostgres,
+  connectMongo
+};

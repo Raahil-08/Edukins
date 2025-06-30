@@ -1,217 +1,312 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5050/api';
+const BASE_URL = 'http://localhost:5050/api'; // Your actual AI backend port
 
 class ApiService {
   private client;
+  private storedToken: string | null = null;
 
   constructor() {
     this.client = axios.create({
       baseURL: BASE_URL,
-      timeout: 30000,
+      timeout: 60000, // Increased timeout for AI generation (60 seconds)
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
+
+    // Add request interceptor for auth token
+    this.client.interceptors.request.use(
+      (config) => {
+        if (this.storedToken) {
+          config.headers.Authorization = `Bearer ${this.storedToken}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Add response interceptor for error handling
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          // Clear stored token on 401
+          this.storedToken = null;
+        }
+        return Promise.reject(error);
+      }
+    );
   }
 
   setAuthToken(token: string | null) {
-    if (token) {
-      this.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      delete this.client.defaults.headers.common['Authorization'];
-    }
+    this.storedToken = token;
   }
 
   async login(email: string, password: string) {
     try {
       const response = await this.client.post('/auth/login', { email, password });
-      return response.data;
+      const { token, user } = response.data;
+      this.setAuthToken(token);
+      return { token, user };
     } catch (error: any) {
+      if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+        // Backend not available, use mock login
+        console.warn('Backend not available, using mock authentication');
+        const mockToken = 'mock-jwt-token-for-demo';
+        const mockUser = {
+          id: '1',
+          email: email,
+          name: email === 'student@edukins.com' ? 'Alex Student' : 'Demo User'
+        };
+        this.setAuthToken(mockToken);
+        return { token: mockToken, user: mockUser };
+      }
+      
+      if (error.response?.status === 401) {
+        throw new Error('Invalid email or password');
+      }
       throw new Error(`Login failed: ${error.message}`);
     }
   }
 
-  async getLessons() {
+  async register(email: string, password: string, name: string) {
     try {
-      const response = await this.client.get('/lessons');
-      return response.data;
+      const response = await this.client.post('/auth/register', { email, password, name });
+      const { token, user } = response.data;
+      this.setAuthToken(token);
+      return { token, user };
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error('Authentication expired. Please login again.');
+      if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+        // Backend not available, use mock registration
+        console.warn('Backend not available, using mock registration');
+        const mockToken = 'mock-jwt-token-for-demo';
+        const mockUser = { id: '2', email, name };
+        this.setAuthToken(mockToken);
+        return { token: mockToken, user: mockUser };
       }
-      // Return mock data for demo
-      return this.getMockLessons();
+      
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data.message || 'Registration failed');
+      }
+      throw new Error(`Registration failed: ${error.message}`);
     }
   }
 
-  async getLesson(lessonId: string) {
-    try {
-      const response = await this.client.get(`/lesson/${lessonId}`);
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error('Authentication expired. Please login again.');
-      }
-      // Return mock data for demo
-      return this.getMockLesson(lessonId);
-    }
-  }
+  async generateLesson(topic: string, grade: number) {
+  try {
+    console.log('🚀 Calling AI backend lesson generation...');
+    console.log('📍 URL:', `${BASE_URL}/lesson`);
+    console.log('📝 Payload:', { 
+      subject: this.getSubjectFromTopic(topic),
+      grade: grade,
+      topic: topic
+    });
 
-  async getLessonAudio(lessonId: string) {
+    const response = await this.client.post('/lesson', { 
+      subject: this.getSubjectFromTopic(topic),
+      grade: grade,
+      topic: topic
+    });
+    
+    console.log('✅ AI Backend Response:', response.data);
+
+    const lesson = response.data;
+    const keyPoints = this.extractKeyPoints(lesson.script || lesson.content || '');
+
+    return {
+      id: lesson.id || `ai_generated_${Date.now()}`,
+      topic: lesson.topic || topic,
+      grade: lesson.grade || grade,
+      content: lesson.script || lesson.content || '',
+      keyPoints: keyPoints,
+      estimatedDuration: lesson.duration || this.estimateDuration(lesson.script || lesson.content || ''),
+      difficulty: lesson.difficulty || this.getDifficultyFromGrade(grade),
+      generatedAt: new Date().toISOString(),
+      wordCount: lesson.script ? lesson.script.split(' ').length : 0,
+      avatar: undefined, // avatar is no longer tied to lesson content
+      isAIGenerated: true
+    };
+  } catch (error: any) {
+    console.error('❌ AI Backend Error:', error);
+
+    if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+      throw new Error('AI backend is not running. Please start your backend server on port 5050.');
+    }
+    if (error.response?.status === 400) {
+      throw new Error(error.response.data.message || 'Invalid lesson parameters');
+    }
+    if (error.response?.status === 429) {
+      throw new Error('Too many requests. Please wait a moment and try again.');
+    }
+    if (error.response?.status === 500) {
+      throw new Error('AI service is temporarily unavailable. Please try again in a moment.');
+    }
+    if (error.response?.status === 401) {
+      throw new Error('Authentication failed. Please check your credentials.');
+    }
+
+    throw new Error(`Failed to generate AI lesson: ${error.message}`);
+  }
+}
+
+
+async generateTTS(text: string, voiceId: string) {
+    console.log('🛠️ Calling generateTTS with:', { text, voiceId });
     try {
-      const response = await this.client.get(`/lesson/${lessonId}/audio`, {
-        responseType: 'blob',
+      const response = await this.client.post('/tts/generate', { 
+        text, 
+        voiceId,
+        format: 'mp3'
+      }, {
+        responseType: 'blob'
       });
       return response.data;
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error('Authentication expired. Please login again.');
+      if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+        // Backend not available, fallback to browser TTS
+        console.warn('Backend TTS not available, using browser text-to-speech');
+        throw new Error('TTS_FALLBACK_TO_BROWSER');
       }
-      throw new Error(`Failed to fetch audio: ${error.message}`);
+      
+      if (error.response?.status === 503) {
+        // TTS service unavailable, fallback to browser
+        throw new Error('TTS_FALLBACK_TO_BROWSER');
+      }
+      
+      throw new Error(`Failed to generate audio: ${error.message}`);
     }
   }
 
-  // Mock data for demo purposes
-  private getMockLessons() {
-    return [
-      {
-        id: '1',
-        subject: 'Science',
-        grade: 5,
-        topic: 'The Solar System',
-        avatar: 'Professor Nova',
-        duration: '15 min',
-        difficulty: 'Intermediate'
-      },
-      {
-        id: '2',
-        subject: 'Math',
-        grade: 4,
-        topic: 'Fractions and Decimals',
-        avatar: 'Math Wizard',
-        duration: '12 min',
-        difficulty: 'Beginner'
-      },
-      {
-        id: '3',
-        subject: 'English',
-        grade: 6,
-        topic: 'Creative Writing',
-        avatar: 'Story Teller',
-        duration: '20 min',
-        difficulty: 'Advanced'
-      },
-      {
-        id: '4',
-        subject: 'History',
-        grade: 5,
-        topic: 'Ancient Civilizations',
-        avatar: 'Time Traveler',
-        duration: '18 min',
-        difficulty: 'Intermediate'
-      },
-      {
-        id: '5',
-        subject: 'Geography',
-        grade: 4,
-        topic: 'World Continents',
-        avatar: 'Explorer Guide',
-        duration: '14 min',
-        difficulty: 'Beginner'
-      },
-      {
-        id: '6',
-        subject: 'Science',
-        grade: 6,
-        topic: 'Chemical Reactions',
-        avatar: 'Lab Assistant',
-        duration: '22 min',
-        difficulty: 'Advanced'
-      }
-    ];
+  async getUserProfile() {
+    try {
+      const response = await this.client.get('/user/profile');
+      return response.data;
+    } catch (error: any) {
+      console.warn('Backend not available for profile, using mock data');
+      return this.getMockProfile();
+    }
   }
 
-  private getMockLesson(lessonId: string) {
-    const lessons: Record<string, any> = {
-      '1': {
-        id: '1',
-        subject: 'Science',
-        grade: 5,
-        topic: 'The Solar System',
-        avatar: 'Professor Nova',
-        script: `Welcome to our exciting journey through the Solar System! I'm Professor Nova, and today we'll explore the amazing celestial bodies that make up our cosmic neighborhood.
+  async updateUserProfile(data: { name?: string; email?: string }) {
+    try {
+      const response = await this.client.put('/user/profile', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error('Profile update not available in demo mode');
+    }
+  }
 
-Our Solar System consists of the Sun and everything that orbits around it. At the center, we have our magnificent Sun - a massive star that provides light and heat to all the planets.
+  // Helper methods
+  private getSubjectFromTopic(topic: string): string {
+    const topicLower = topic.toLowerCase();
+    
+    if (topicLower.includes('math') || topicLower.includes('algebra') || topicLower.includes('geometry') || 
+        topicLower.includes('fraction') || topicLower.includes('number') || topicLower.includes('calculation') ||
+        topicLower.includes('arithmetic') || topicLower.includes('multiplication') || topicLower.includes('division')) {
+      return 'Math';
+    }
+    
+    if (topicLower.includes('science') || topicLower.includes('chemistry') || topicLower.includes('physics') || 
+        topicLower.includes('biology') || topicLower.includes('solar') || topicLower.includes('planet') ||
+        topicLower.includes('animal') || topicLower.includes('plant') || topicLower.includes('chemical') ||
+        topicLower.includes('matter') || topicLower.includes('volcano') || topicLower.includes('dinosaur') ||
+        topicLower.includes('space') || topicLower.includes('earth') || topicLower.includes('nature')) {
+      return 'Science';
+    }
+    
+    if (topicLower.includes('history') || topicLower.includes('ancient') || topicLower.includes('war') || 
+        topicLower.includes('civilization') || topicLower.includes('empire') || topicLower.includes('revolution') ||
+        topicLower.includes('historical') || topicLower.includes('past') || topicLower.includes('timeline')) {
+      return 'History';
+    }
+    
+    if (topicLower.includes('geography') || topicLower.includes('continent') || topicLower.includes('country') || 
+        topicLower.includes('ocean') || topicLower.includes('mountain') || topicLower.includes('climate') ||
+        topicLower.includes('map') || topicLower.includes('location') || topicLower.includes('region')) {
+      return 'Geography';
+    }
+    
+    if (topicLower.includes('english') || topicLower.includes('writing') || topicLower.includes('grammar') || 
+        topicLower.includes('reading') || topicLower.includes('literature') || topicLower.includes('story') ||
+        topicLower.includes('language') || topicLower.includes('poetry') || topicLower.includes('essay')) {
+      return 'English';
+    }
+    
+    if (topicLower.includes('art') || topicLower.includes('drawing') || topicLower.includes('painting') || 
+        topicLower.includes('color') || topicLower.includes('artist') || topicLower.includes('creative') ||
+        topicLower.includes('design') || topicLower.includes('sculpture')) {
+      return 'Art';
+    }
+    
+    // Default to Science for general topics
+    return 'Science';
+  }
 
-Let's start with the planets closest to the Sun. Mercury is the smallest planet and the closest to the Sun. It's so hot during the day that it could melt lead! Venus comes next, often called Earth's twin because of its similar size, but it's covered in thick, poisonous clouds.
-
-Then we have our beautiful home planet, Earth - the only planet we know of that supports life. Earth has liquid water, breathable air, and the perfect distance from the Sun to maintain comfortable temperatures.
-
-Mars, the red planet, is next. It gets its red color from iron oxide, or rust, on its surface. Scientists are very interested in Mars because they think it might have had water in the past.
-
-Beyond Mars, we find the gas giants. Jupiter is the largest planet in our Solar System - so big that all the other planets could fit inside it! It has a famous red spot, which is actually a giant storm that has been raging for hundreds of years.
-
-Saturn is known for its beautiful rings made of ice and rock particles. These rings are so wide that they could stretch from Earth to the Moon!
-
-Uranus is unique because it spins on its side, and Neptune is the windiest planet with storms reaching speeds of up to 1,200 miles per hour!
-
-Our Solar System is truly amazing, and there's still so much more to discover. Remember, we're all space travelers on our planet Earth, zooming through the cosmos at incredible speeds!`,
-        duration: '15 min',
-        difficulty: 'Intermediate'
-      },
-      '2': {
-        id: '2',
-        subject: 'Math',
-        grade: 4,
-        topic: 'Fractions and Decimals',
-        avatar: 'Math Wizard',
-        script: `Hello young mathematicians! I'm the Math Wizard, and today we're going to unlock the magical world of fractions and decimals!
-
-Think of fractions as pieces of a pizza. When you have a whole pizza and cut it into equal slices, each slice represents a fraction of the whole pizza. If you cut the pizza into 4 equal slices and take 1 slice, you have 1/4 of the pizza.
-
-The number on top (1) is called the numerator - it tells us how many pieces we have. The number on the bottom (4) is called the denominator - it tells us how many equal pieces the whole thing was divided into.
-
-Let's practice with some examples. If you have 3 out of 8 slices of pizza, you have 3/8. If you eat 2 more slices, you now have 5/8 of the pizza.
-
-Now, let's talk about decimals. Decimals are another way to show parts of a whole, but they use a decimal point. The decimal 0.5 means the same thing as the fraction 1/2 - it's half of something!
-
-Here's the magic connection: 1/4 equals 0.25, 1/2 equals 0.5, and 3/4 equals 0.75. You can convert fractions to decimals by dividing the numerator by the denominator.
-
-Let's try some fun examples. If you have $0.75, that's the same as having 3/4 of a dollar, or 75 cents. If you run 2.5 miles, that's the same as running 2 and 1/2 miles.
-
-Remember, fractions and decimals are just different ways of expressing the same thing - parts of a whole. With practice, you'll become a fraction and decimal wizard too!`,
-        duration: '12 min',
-        difficulty: 'Beginner'
-      },
-      '3': {
-        id: '3',
-        subject: 'English',
-        grade: 6,
-        topic: 'Creative Writing',
-        avatar: 'Story Teller',
-        script: `Greetings, young storytellers! I'm your Story Teller, and today we're going to embark on an incredible adventure into the world of creative writing!
-
-Every great story starts with an idea - a spark of imagination that grows into something amazing. Your ideas can come from anywhere: a dream you had, something interesting you saw, or even a "what if" question.
-
-Let's talk about the building blocks of a great story. First, you need characters - the people, animals, or even magical creatures in your story. Make them interesting! Give them personalities, dreams, and maybe even some flaws that make them feel real.
-
-Next, you need a setting - where and when your story takes place. Is it in a magical forest, a bustling city, or maybe even on a distant planet? The setting helps create the mood and atmosphere of your story.
-
-Every good story needs conflict - a problem that your characters need to solve. Maybe your character is trying to find a lost treasure, save their town from a dragon, or simply make a new friend at school.
-
-Here's a secret from professional writers: show, don't tell. Instead of saying "Sarah was scared," you could write "Sarah's hands trembled as she reached for the creaky door handle." This helps readers feel like they're right there in the story.
-
-Use your five senses when you write. What do your characters see, hear, smell, taste, and feel? This makes your story come alive in the reader's mind.
-
-Don't forget about dialogue - the words your characters speak. Good dialogue sounds natural and helps reveal what your characters are thinking and feeling.
-
-Remember, the first draft is just the beginning. Real writers revise and edit their work to make it better. Don't be afraid to change things, add details, or try different approaches.
-
-Most importantly, have fun with your writing! Let your imagination run wild, and don't worry about making it perfect. Every great writer started exactly where you are now.`,
-        duration: '20 min',
-        difficulty: 'Advanced'
+  private extractKeyPoints(content: string): string[] {
+    if (!content) return [];
+    
+    // Enhanced key point extraction from AI-generated content
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    const keyPoints = [];
+    
+    // Look for sentences that seem like key points
+    for (const sentence of sentences.slice(0, 15)) { // Check more sentences
+      const trimmed = sentence.trim();
+      if (trimmed.length > 30 && trimmed.length < 200) {
+        // Look for sentences that start with key phrases or contain important information
+        if (trimmed.match(/^(First|Second|Third|Next|Finally|Remember|Important|Key|Main|Let's|Here|This|When|Why|How)/i) ||
+            trimmed.includes('is important') || trimmed.includes('helps us') || 
+            trimmed.includes('we learn') || trimmed.includes('understand') ||
+            trimmed.includes('means that') || trimmed.includes('shows us') ||
+            trimmed.includes('teaches us') || trimmed.includes('demonstrates')) {
+          keyPoints.push(trimmed);
+          if (keyPoints.length >= 6) break;
+        }
       }
-    };
+    }
+    
+    // If we don't have enough key points, extract from paragraph beginnings
+    if (keyPoints.length < 3) {
+      const paragraphs = content.split('\n\n').filter(p => p.trim().length > 50);
+      for (const paragraph of paragraphs.slice(0, 5)) {
+        const firstSentence = paragraph.split(/[.!?]/)[0].trim();
+        if (firstSentence.length > 30 && firstSentence.length < 150) {
+          keyPoints.push(firstSentence);
+          if (keyPoints.length >= 5) break;
+        }
+      }
+    }
+    
+    return keyPoints.slice(0, 6); // Limit to 6 key points
+  }
 
-    return lessons[lessonId] || lessons['1'];
+  private estimateDuration(content: string): string {
+    if (!content) return '5 min';
+    
+    const wordCount = content.split(' ').length;
+    const estimatedMinutes = Math.ceil(wordCount / 180); // Slightly slower reading for educational content
+    return `${estimatedMinutes} min`;
+  }
+
+  private getDifficultyFromGrade(grade: number): string {
+    if (grade <= 3) return 'Beginner';
+    if (grade <= 6) return 'Intermediate';
+    return 'Advanced';
+  }
+
+  private getMockProfile() {
+    return {
+      id: '1',
+      email: 'student@edukins.com',
+      name: 'Alex Student',
+      grade: 5,
+      completedLessons: ['1', '2'],
+      totalLessons: 12,
+      subjects: ['Science', 'Math', 'English', 'History', 'Geography']
+    };
   }
 }
 
