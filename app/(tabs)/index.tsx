@@ -113,7 +113,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.welcomeSection}>
-            <Text style={styles.title}>Hello, {user?.name || 'Student'}! 👋</Text>
+            <Text style={styles.title}>Hello Student! </Text>
             <Text style={styles.subtitle}>What would you like to learn today?</Text>
           </View>
           
